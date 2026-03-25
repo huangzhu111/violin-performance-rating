@@ -276,6 +276,7 @@ function App() {
                 errors.push({
                   time: `${Math.floor(refTime / 60)}:${Math.floor(refTime % 60).toString().padStart(2, '0')}`,
                   type: 'pitch',
+                  severity: absSemitones > 2 ? 'high' : (absSemitones > 1 ? 'medium' : 'low'),
                   note: getNote(refFreq),
                   expected: getNote(refFreq),
                   actual: getNote(userFreq)
