@@ -102,23 +102,20 @@ button.back {
 }
 
 .project-list li {
-  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
   border-bottom: 1px solid #eee;
-  cursor: pointer;
 }
 
 .project-list li:hover {
   background: #f9f9f9;
 }
 
-.project-list li span {
-  display: block;
-}
-
-.project-list .status {
-  font-size: 12px;
-  color: #999;
-  margin-top: 4px;
+.project-item {
+  flex: 1;
+  cursor: pointer;
 }
 
 .recorder {
