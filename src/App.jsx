@@ -279,13 +279,36 @@ function App() {
             ) : (
               <ul className="project-list">
                 {projects.map(p => (
-                  <li key={p.id} onClick={async () => { setCurrentProject(p); await loadPerformances(p.id); setView(p.referenceAudio ? 'record-user' : 'record-ref') }}>
-                    <span className="project-name">{p.name}</span>
-                    <span className="status">
-                      {p.referenceAudio ? '✓' : '○'} 标准音 
-                      {' | '}
-                      {performances.length > 0 ? `✓ ${performances.length}次练习` : '○ 我的演奏'}
-                    </span>
+                  <li key={p.id}>
+                    <div className="project-item" onClick={async () => { setCurrentProject(p); await loadPerformances(p.id); setView(p.referenceAudio ? 'record-user' : 'record-ref') }}>
+                      <span className="project-name">{p.name}</span>
+                      <span className="status">
+                        {p.referenceAudio ? '✓' : '○'} 标准音 
+                        {' | '}
+                        {performances.length > 0 ? `✓ ${performances.length}次练习` : '○ 我的演奏'}
+                      </span>
+                    </div>
+                    <button 
+                      className="delete-btn"
+                      onClick={async () => {
+                        if (confirm(`确定要删除项目"${p.name}"吗？`)) {
+                          await db.delete('projects', p.id)
+                          // 删除相关演奏记录
+                          const allPerfs = await db.getAll('performances')
+                          for (const perf of allPerfs) {
+                            if (perf.projectId === p.id) {
+                              await db.delete('performances', perf.id)
+                            }
+                          }
+                          setProjects(projects.filter(proj => proj.id !== p.id))
+                          if (currentProject?.id === p.id) {
+                            setCurrentProject(null)
+                          }
+                        }
+                      }}
+                    >
+                      🗑️
+                    </button>
                   </li>
                 ))}
               </ul>
