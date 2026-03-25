@@ -296,9 +296,14 @@ function App() {
           })
         }
         
-        // 评分
-        const scorer = new Scorer()
-        const finalScore = scorer.calculateScore(errors)
+        // 评分 - 分开 pitch 和 rhythm 错误
+        const pitchErrorsOnly = errors.filter(e => e.type === 'pitch')
+        const rhythmErrorsOnly = errors.filter(e => e.type === 'rhythm')
+        
+        const finalScore = scorer.calculateScore(pitchErrorsOnly, rhythmErrorsOnly, {
+          duration: recordingTime,
+          totalNotes: errors.length
+        })
         
         setScore(finalScore)
         setErrors(errors)
