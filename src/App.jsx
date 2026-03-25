@@ -316,7 +316,7 @@ function App() {
         
         setView('result')
       } catch (err) {
-        console.error('分析失败:', err)
+        console.error('分析失败:', err); console.log('refPitch:', refPitch ? refPitch.length : 'null'); console.log('userPitch:', userPitch ? userPitch.length : 'null')
         alert('分析失败，请重新录制！错误: ' + err.message)
       } finally {
         setIsAnalyzing(false)
