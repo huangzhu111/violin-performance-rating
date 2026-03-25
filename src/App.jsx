@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { openDB } from 'idb'
 import { AudioProcessor } from './utils/audio_processor'
 import { FeatureExtractor } from './utils/feature_extractor'
+import { SpiceExtractor } from './utils/spice_extractor'
 import { DTWAligner } from './utils/dtw_aligner'
 import { ErrorDetector } from './utils/error_detector'
 import { Scorer } from './utils/scorer'
@@ -41,6 +42,9 @@ function App() {
   const [playingErrorIndex, setPlayingErrorIndex] = useState(null)
   const [playMode, setPlayMode] = useState('user') // 'user' 或 'reference'
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [isModelLoading, setIsModelLoading] = useState(true)
+  const [modelError, setModelError] = useState(null)
+  const [spiceExtractor, setSpiceExtractor] = useState(null)
 
   const maxRecordingTime = 120
 
@@ -95,6 +99,23 @@ function App() {
     }
     loadData()
   }, [])
+
+  // 初始化并加载 SPICE 模型
+  useEffect(() => {
+    const initSpice = async () => {
+      try {
+        const extractor = new SpiceExtractor();
+        setSpiceExtractor(extractor);
+        await extractor.loadModel();
+        setIsModelLoading(false);
+      } catch (err) {
+        console.error('SPICE 模型加载失败:', err);
+        setModelError(err.message);
+        setIsModelLoading(false);
+      }
+    };
+    initSpice();
+  }, []);
 
   // 获取项目演奏历史
   const loadPerformances = async (projectId) => {
@@ -195,6 +216,11 @@ function App() {
         return
       }
       
+      if (isModelLoading) {
+        alert('模型加载中，请稍后再试！')
+        return
+      }
+      
       setIsAnalyzing(true)
       
       try {
@@ -205,9 +231,24 @@ function App() {
         const userAudioBuffer = await audioProcessor.loadAudioFromBlob(currentAudioBlob)
         const refAudioBuffer = await audioProcessor.loadAudioFromBlob(referenceAudioBlob)
         
-        // 提取音高
-        const userPitch = await featureExtractor.extractPitch(userAudioBuffer)
-        const refPitch = await featureExtractor.extractPitch(refAudioBuffer)
+        // 优先使用 SPICE 模型提取音高，失败则回退到 autocorrelation
+        let userPitch, refPitch;
+        const getNote = spiceExtractor && spiceExtractor.isModelLoaded()
+          ? (f) => spiceExtractor.getNoteFromFrequency(f)
+          : (f) => featureExtractor.getNoteFromFrequency(f);
+        
+        try {
+          if (spiceExtractor && spiceExtractor.isModelLoaded()) {
+            userPitch = await spiceExtractor.extractPitch(userAudioBuffer);
+            refPitch = await spiceExtractor.extractPitch(refAudioBuffer);
+          } else {
+            throw new Error('SPICE model not loaded');
+          }
+        } catch (spiceErr) {
+          console.warn('SPICE 提取失败，回退到 autocorrelation:', spiceErr.message);
+          userPitch = await featureExtractor.extractPitch(userAudioBuffer);
+          refPitch = await featureExtractor.extractPitch(refAudioBuffer);
+        }
         
         if (refPitch.length === 0 || userPitch.length === 0) {
           alert('无法提取音高，请确保录音清晰！')
@@ -235,9 +276,9 @@ function App() {
                 errors.push({
                   time: `${Math.floor(refTime / 60)}:${Math.floor(refTime % 60).toString().padStart(2, '0')}`,
                   type: 'pitch',
-                  note: getNoteFromFrequency(refFreq),
-                  expected: getNoteFromFrequency(refFreq),
-                  actual: getNoteFromFrequency(userFreq)
+                  note: getNote(refFreq),
+                  expected: getNote(refFreq),
+                  actual: getNote(userFreq)
                 })
               }
             }
@@ -409,6 +450,14 @@ function App() {
             <h2>录制我的演奏: {currentProject.name}</h2>
             <p className="tip">请用小提琴演奏同一曲目</p>
             
+            {isModelLoading && (
+              <p className="tip" style={{color: '#f59e0b'}}>🔄 加载模型中，请稍候...</p>
+            )}
+            
+            {modelError && (
+              <p className="tip" style={{color: '#ef4444'}}>⚠️ 模型加载失败: {modelError} (将使用备用算法)</p>
+            )}
+            
             <div className="recorder">
               <div className="timer">{formatTime(recordingTime)} / {formatTime(maxRecordingTime)}</div>
               
@@ -426,8 +475,8 @@ function App() {
               
               {!isRecording && recordingTime > 0 && !currentProject.userAudio && (
                 <div className="actions">
-                  <button onClick={() => saveRecording('userAudio')} disabled={isAnalyzing}>
-                    {isAnalyzing ? '分析中...' : '保存并分析'}
+                  <button onClick={() => saveRecording('userAudio')} disabled={isAnalyzing || isModelLoading}>
+                    {isAnalyzing ? '分析中...' : isModelLoading ? '加载模型中...' : '保存并分析'}
                   </button>
                   <button className="secondary" onClick={() => setRecordingTime(0)} disabled={isAnalyzing}>重试</button>
                 </div>
