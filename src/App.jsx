@@ -285,16 +285,8 @@ function App() {
           }
         }
         
-        // 如果没有检测到错误，给一个示例错误（测试用）
-        if (errors.length === 0) {
-          errors.push({
-            time: '0:10',
-            type: 'pitch',
-            note: 'C4',
-            expected: 'C4',
-            actual: 'C#4'
-          })
-        }
+        // 如果没有检测到错误，给出高分
+        // 不再强制添加示例错误
         
         // 评分 - 分开 pitch 和 rhythm 错误
         const pitchErrorsOnly = errors.filter(e => e.type === 'pitch')
