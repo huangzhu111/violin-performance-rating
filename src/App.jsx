@@ -210,8 +210,8 @@ function App() {
       setReferenceAudioBlob(currentAudioBlob)
       setView('record-user')
     } else {
-      // 实际分析
-      if (!referenceAudioBlob) {
+      // 实际分析 - 检查项目中是否有标准音记录
+      if (!currentProject || !currentProject.referenceAudio) {
         alert('请先录制标准音！')
         return
       }
@@ -377,7 +377,16 @@ function App() {
               <ul className="project-list">
                 {projects.map(p => (
                   <li key={p.id}>
-                    <div className="project-item" onClick={async () => { setCurrentProject(p); await loadPerformances(p.id); setView(p.referenceAudio ? 'record-user' : 'record-ref') }}>
+                    <div className="project-item" onClick={async () => { 
+                      setCurrentProject(p); 
+                      await loadPerformances(p.id); 
+                      // 如果有保存的标准音，加载它
+                      if (p.referenceAudio) {
+                        // 从 IndexedDB 加载标准音 Blob
+                        // 这里暂时不重新加载 Blob，只检查是否存在
+                      }
+                      setView(p.referenceAudio ? 'record-user' : 'record-ref') 
+                    }}>
                       <span className="project-name">{p.name}</span>
                       <span className="status">
                         {p.referenceAudio ? '✓' : '○'} 标准音 
@@ -566,7 +575,7 @@ function App() {
             )}
             
             <div className="actions">
-              <button onClick={() => { setCurrentProject({...currentProject, userAudio: null}); setView('record-user') }}>
+              <button onClick={() => { setScore(null); setErrors([]); setRecordingTime(0); setView('record-user') }}>
                 重新录制
               </button>
               <button className="secondary" onClick={() => setView('history')}>
