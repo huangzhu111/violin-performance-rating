@@ -173,56 +173,43 @@ function App() {
       setReferenceAudioBlob(currentAudioBlob)
       setView('record-user')
     } else {
-      // 实际分析（如果音频已录制）
+      // 实际分析
+      if (!referenceAudioBlob) {
+        alert('请先录制标准音！')
+        return
+      }
+      
       try {
         const audioProcessor = new AudioProcessor()
         const featureExtractor = new FeatureExtractor()
         
         // 解码音频
         const userAudioBuffer = await audioProcessor.loadAudioFromBlob(currentAudioBlob)
+        const refAudioBuffer = await audioProcessor.loadAudioFromBlob(referenceAudioBlob)
         
         // 提取音高
         const userPitch = await featureExtractor.extractPitch(userAudioBuffer)
+        const refPitch = await featureExtractor.extractPitch(refAudioBuffer)
         
-        let refPitch = []
-        let refAudioBuffer = null
-        
-        // 如果有参考音频，也提取音高
-        if (referenceAudioBlob) {
-          refAudioBuffer = await audioProcessor.loadAudioFromBlob(referenceAudioBlob)
-          refPitch = await featureExtractor.extractPitch(refAudioBuffer)
+        if (refPitch.length === 0 || userPitch.length === 0) {
+          alert('无法提取音高，请确保录音清晰！')
+          return
         }
         
-        let errors = []
-        let finalScore = { total: 0, pitch: 0, rhythm: 0 }
+        // DTW 对齐
+        const dtwAligner = new DTWAligner()
+        const aligned = dtwAligner.dtw_align(refPitch, userPitch)
         
-        if (refPitch.length > 0 && userPitch.length > 0) {
-          // DTW 对齐
-          const dtwAligner = new DTWAligner()
-          const aligned = dtwAligner.dtw_align(refPitch, userPitch)
-          
-          // 错误检测
-          const errorDetector = new ErrorDetector()
-          errors = errorDetector.detectErrors(aligned.refAligned, aligned.userAligned, {
-            pitchThreshold: 50, // cents
-            rhythmThreshold: 0.3 // seconds
-          })
-          
-          // 评分
-          const scorer = new Scorer()
-          finalScore = scorer.calculateScore(errors)
-        } else {
-          // 没有参考音频，使用简单分析
-          finalScore = {
-            total: Math.floor(Math.random() * 30) + 70,
-            pitch: Math.floor(Math.random() * 20) + 80,
-            rhythm: Math.floor(Math.random() * 25) + 75
-          }
-          errors = [
-            { time: '0:05', type: 'pitch', note: 'C4', expected: 'C4', actual: 'C#4' },
-            { time: '0:12', type: 'pitch', note: 'G4', expected: 'G4', actual: 'G#4' }
-          ]
-        }
+        // 错误检测
+        const errorDetector = new ErrorDetector()
+        const errors = errorDetector.detectErrors(aligned.refAligned, aligned.userAligned, {
+          pitchThreshold: 50, // cents
+          rhythmThreshold: 0.3 // seconds
+        })
+        
+        // 评分
+        const scorer = new Scorer()
+        const finalScore = scorer.calculateScore(errors)
         
         setScore(finalScore)
         setErrors(errors)
@@ -243,66 +230,9 @@ function App() {
         setView('result')
       } catch (err) {
         console.error('分析失败:', err)
-        // 如果分析失败，使用模拟数据
-        const mockScore = {
-          total: Math.floor(Math.random() * 30) + 70,
-          pitch: Math.floor(Math.random() * 20) + 80,
-          rhythm: Math.floor(Math.random() * 25) + 75
-        }
-        const mockErrors = [
-          { time: '0:05', type: 'pitch', note: 'C4', expected: 'C4', actual: 'C#4' },
-          { time: '0:12', type: 'pitch', note: 'G4', expected: 'G4', actual: 'G#4' }
-        ]
-        
-        setScore(mockScore)
-        setErrors(mockErrors)
-        
-        const performance = {
-          projectId: currentProject.id,
-          projectName: currentProject.name,
-          score: mockScore,
-          errors: mockErrors,
-          recordedAt: new Date().toLocaleString(),
-          duration: recordingTime
-        }
-        
-        await db.put('performances', performance)
-        await loadPerformances(currentProject.id)
-        
-        setView('result')
+        alert('分析失败，请重新录制！错误: ' + err.message)
       }
     }
-  }
-
-  const analyzePerformance = async () => {
-    // 模拟分析结果
-    const mockScore = {
-      total: Math.floor(Math.random() * 30) + 70,
-      pitch: Math.floor(Math.random() * 20) + 80,
-      rhythm: Math.floor(Math.random() * 25) + 75
-    }
-    const mockErrors = [
-      { time: '0:15', type: 'pitch', note: 'G4', expected: 'G4', actual: 'G#4' },
-      { time: '0:32', type: 'rhythm', expected: '0.5s', actual: '0.7s' }
-    ]
-    
-    setScore(mockScore)
-    setErrors(mockErrors)
-    
-    // 保存演奏记录
-    const performance = {
-      projectId: currentProject.id,
-      projectName: currentProject.name,
-      score: mockScore,
-      errors: mockErrors,
-      recordedAt: new Date().toLocaleString(),
-      duration: recordingTime
-    }
-    
-    await db.put('performances', performance)
-    await loadPerformances(currentProject.id)
-    
-    setView('result')
   }
 
   // 计算错误统计
