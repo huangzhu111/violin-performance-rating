@@ -32,19 +32,22 @@ function App() {
   const [performances, setPerformances] = useState([])
   const [db, setDb] = useState(null)
   const [currentAudioBlob, setCurrentAudioBlob] = useState(null)
+  const [referenceAudioBlob, setReferenceAudioBlob] = useState(null)
   const [playingErrorIndex, setPlayingErrorIndex] = useState(null)
+  const [playMode, setPlayMode] = useState('user') // 'user' 或 'reference'
 
   const maxRecordingTime = 120
 
   // 播放音频片段（前后5秒）
   const playErrorSegment = (error, audioBlob) => {
-    if (!audioBlob) return
+    const blob = playMode === 'reference' ? referenceAudioBlob : audioBlob
+    if (!blob) return
     
     // 解析时间 (e.g., "0:15" -> 15)
     const timeParts = error.time.split(':')
     const errorTime = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1])
     
-    const audio = new Audio(URL.createObjectURL(audioBlob))
+    const audio = new Audio(URL.createObjectURL(blob))
     
     // 从错误时间前5秒开始播放
     const startTime = Math.max(0, errorTime - 5)
@@ -162,6 +165,7 @@ function App() {
     setProjects(projects.map(p => p.id === updatedProject.id ? updatedProject : p))
     
     if (type === 'referenceAudio') {
+      setReferenceAudioBlob(currentAudioBlob)
       setView('record-user')
     } else {
       // 生成模拟分析结果
@@ -395,6 +399,21 @@ function App() {
             
             {errors.length > 0 && (
               <div className="errors">
+                <div className="play-mode-toggle">
+                  <button 
+                    className={playMode === 'user' ? 'active' : ''}
+                    onClick={() => setPlayMode('user')}
+                  >
+                    🎻 听我的演奏
+                  </button>
+                  <button 
+                    className={playMode === 'reference' ? 'active' : ''}
+                    onClick={() => setPlayMode('reference')}
+                  >
+                    🎼 听标准演奏
+                  </button>
+                </div>
+                
                 <h3>发现的问题 (点击播放):</h3>
                 <ul>
                   {errors.map((e, i) => (

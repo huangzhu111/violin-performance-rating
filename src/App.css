@@ -359,3 +359,24 @@ button.back {
   background: #aaa;
   cursor: not-allowed;
 }
+
+/* 播放模式切换 */
+.play-mode-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.play-mode-toggle button {
+  flex: 1;
+  padding: 10px;
+  font-size: 14px;
+  background: #f0f0f0;
+  color: #666;
+  border-radius: 8px;
+}
+
+.play-mode-toggle button.active {
+  background: #667eea;
+  color: white;
+}
