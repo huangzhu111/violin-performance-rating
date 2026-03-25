@@ -484,7 +484,7 @@ function App() {
               {!isRecording && recordingTime > 0 && !currentProject.userAudio && (
                 <div className="actions">
                   <button onClick={() => saveRecording('userAudio')} disabled={isAnalyzing || isModelLoading}>
-                    {isAnalyzing ? '分析中...' : isModelLoading ? '加载模型中...' : '保存并分析'}
+                    {isAnalyzing ? <><span className="loading-spinner"></span>分析中...</> : isModelLoading ? <><span className="loading-spinner"></span>加载模型...</> : '保存并分析'}
                   </button>
                   <button className="secondary" onClick={() => setRecordingTime(0)} disabled={isAnalyzing}>重试</button>
                 </div>
