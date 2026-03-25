@@ -259,6 +259,7 @@ function App() {
         const errors = []
         
         if (refPitch.length > 0 && userPitch.length > 0) {
+          console.log("=== 音高分析调试 ==="); console.log("refPitch 数量:", refPitch.length); console.log("userPitch 数量:", userPitch.length);
           // 使用 DTW 对齐两个音高序列
           const dtw = new DTWAligner()
           const aligned = dtw.dtw_align(refPitch, userPitch)
@@ -274,13 +275,13 @@ function App() {
             const userFreq = alignedUser[i].frequency
             const refTime = alignedRef[i].time
             
-            if (refFreq && userFreq) {
+            if (refFreq if (refFreq && userFreq) {if (refFreq && userFreq) { userFreq) { console.log("比对: ref=" + refFreq + "Hz user=" + userFreq + "Hz semitones=" + (12 * Math.log2(userFreq / refFreq));
               // 计算半音偏差
               const semitones = 12 * Math.log2(userFreq / refFreq)
               const absSemitones = Math.abs(semitones)
               
               // 如果偏差超过0.5个半音，记为错误
-              console.log("检测到音高偏差:", absSemitones); if (absSemitones > 1.5) {
+              console.log("DTW后比对: ref=" + refFreq + " user=" + userFreq + " diff=" + absSemitones); console.log("检测到音高偏差:", absSemitones); if (absSemitones > 1.5) {
                 errors.push({
                   time: `${Math.floor(refTime / 60)}:${Math.floor(refTime % 60).toString().padStart(2, '0')}`,
                   type: 'pitch',
