@@ -31,8 +31,34 @@ function App() {
   const [errors, setErrors] = useState([])
   const [performances, setPerformances] = useState([])
   const [db, setDb] = useState(null)
+  const [currentAudioBlob, setCurrentAudioBlob] = useState(null)
+  const [playingErrorIndex, setPlayingErrorIndex] = useState(null)
 
   const maxRecordingTime = 120
+
+  // 播放音频片段（前后5秒）
+  const playErrorSegment = (error, audioBlob) => {
+    if (!audioBlob) return
+    
+    // 解析时间 (e.g., "0:15" -> 15)
+    const timeParts = error.time.split(':')
+    const errorTime = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1])
+    
+    const audio = new Audio(URL.createObjectURL(audioBlob))
+    
+    // 从错误时间前5秒开始播放
+    const startTime = Math.max(0, errorTime - 5)
+    audio.currentTime = startTime
+    
+    audio.play()
+    setPlayingErrorIndex(error.time)
+    
+    // 播放10秒后停止（前后5秒 = 10秒）
+    setTimeout(() => {
+      audio.pause()
+      setPlayingErrorIndex(null)
+    }, 10000)
+  }
 
   // 加载数据
   useEffect(() => {
@@ -70,9 +96,27 @@ function App() {
     setView('record-ref')
   }
 
-  const startRecording = () => {
+  const startRecording = async () => {
     setIsRecording(true)
     setRecordingTime(0)
+    setCurrentAudioBlob(null)
+    window._audioChunks = []
+    
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mediaRecorder = new MediaRecorder(stream)
+      window._mediaRecorder = mediaRecorder
+      
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          window._audioChunks.push(e.data)
+        }
+      }
+      
+      mediaRecorder.start(100) // 每 100ms 收集一次数据
+    } catch (err) {
+      console.error('无法访问麦克风:', err)
+    }
     
     const timer = setInterval(() => {
       setRecordingTime(t => {
@@ -92,6 +136,16 @@ function App() {
     if (window._recordingTimer) {
       clearInterval(window._recordingTimer)
       window._recordingTimer = null
+    }
+    
+    if (window._mediaRecorder && window._mediaRecorder.state === 'recording') {
+      window._mediaRecorder.stop()
+      window._mediaRecorder.onstop = () => {
+        if (window._audioChunks && window._audioChunks.length > 0) {
+          const blob = new Blob(window._audioChunks, { type: 'audio/webm' })
+          setCurrentAudioBlob(blob)
+        }
+      }
     }
   }
 
@@ -335,11 +389,17 @@ function App() {
             
             {errors.length > 0 && (
               <div className="errors">
-                <h3>发现的问题:</h3>
+                <h3>发现的问题 (点击播放):</h3>
                 <ul>
                   {errors.map((e, i) => (
                     <li key={i}>
-                      <span className="time">{e.time}</span>
+                      <button 
+                        className="play-error-btn"
+                        onClick={() => playErrorSegment(e, currentAudioBlob)}
+                        disabled={playingErrorIndex === e.time}
+                      >
+                        {playingErrorIndex === e.time ? '🔊 播放中...' : '▶'} {e.time}
+                      </button>
                       <span className="type">{e.type === 'pitch' ? '音高' : '节奏'}</span>
                       {e.type === 'pitch' 
                         ? ` ${e.expected} → ${e.actual}`

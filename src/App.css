@@ -341,3 +341,21 @@ button.back {
   border-radius: 4px;
   font-size: 12px;
 }
+
+/* 错误播放按钮 */
+.play-error-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  margin-right: 8px;
+  width: auto;
+}
+
+.play-error-btn:disabled {
+  background: #aaa;
+  cursor: not-allowed;
+}
