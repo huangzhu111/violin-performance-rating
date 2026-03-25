@@ -272,7 +272,7 @@ function App() {
               const absSemitones = Math.abs(semitones)
               
               // 如果偏差超过0.5个半音，记为错误
-              if (absSemitones > 0.5) {
+              if (absSemitones > 1.5) {
                 errors.push({
                   time: `${Math.floor(refTime / 60)}:${Math.floor(refTime % 60).toString().padStart(2, '0')}`,
                   type: 'pitch',
