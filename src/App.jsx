@@ -237,7 +237,10 @@ function App() {
         )
         
         // 合并错误
-        const errors = [...pitchErrors, ...rhythmErrors].map(e => ({
+        const pitchErrArray = Array.isArray(pitchErrors) ? pitchErrors : []
+        const rhythmErrArray = Array.isArray(rhythmErrors) ? rhythmErrors : []
+        
+        const errors = [...pitchErrArray, ...rhythmErrArray].map(e => ({
           time: e.time ? `${Math.floor(e.time / 60)}:${Math.floor(e.time % 60).toString().padStart(2, '0')}` : '0:00',
           type: e.type,
           note: e.refFrequency ? getNoteFromFrequency(e.refFrequency) : null,
