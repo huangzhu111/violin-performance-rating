@@ -1,8 +1,27 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { openDB } from 'idb'
 import './App.css'
 
+// 初始化 IndexedDB
+const initDB = async () => {
+  return openDB('violin-rating-db', 1, {
+    upgrade(db) {
+      // 项目存储
+      if (!db.objectStoreNames.contains('projects')) {
+        const projectStore = db.createObjectStore('projects', { keyPath: 'id' })
+        projectStore.createIndex('name', 'name')
+      }
+      // 演奏记录存储
+      if (!db.objectStoreNames.contains('performances')) {
+        const perfStore = db.createObjectStore('performances', { keyPath: 'id', autoIncrement: true })
+        perfStore.createIndex('projectId', 'projectId')
+      }
+    }
+  })
+}
+
 function App() {
-  const [view, setView] = useState('projects') // projects, record-ref, record-user, result
+  const [view, setView] = useState('projects')
   const [projects, setProjects] = useState([])
   const [currentProject, setCurrentProject] = useState(null)
   const [projectName, setProjectName] = useState('')
@@ -10,18 +29,41 @@ function App() {
   const [recordingTime, setRecordingTime] = useState(0)
   const [score, setScore] = useState(null)
   const [errors, setErrors] = useState([])
+  const [performances, setPerformances] = useState([])
+  const [db, setDb] = useState(null)
 
-  const maxRecordingTime = 120 // 2分钟
+  const maxRecordingTime = 120
 
-  const createProject = () => {
+  // 加载数据
+  useEffect(() => {
+    const loadData = async () => {
+      const database = await initDB()
+      setDb(database)
+      
+      const allProjects = await database.getAll('projects')
+      setProjects(allProjects)
+    }
+    loadData()
+  }, [])
+
+  // 获取项目演奏历史
+  const loadPerformances = async (projectId) => {
+    if (!db) return
+    const allPerfs = await db.getAll('performances')
+    const projectPerfs = allPerfs.filter(p => p.projectId === projectId)
+    setPerformances(projectPerfs)
+  }
+
+  const createProject = async () => {
     if (!projectName.trim()) return
     const newProject = {
       id: Date.now(),
       name: projectName,
       referenceAudio: null,
-      userAudio: null,
       createdAt: new Date().toLocaleString()
     }
+    
+    await db.put('projects', newProject)
     setProjects([...projects, newProject])
     setCurrentProject(newProject)
     setProjectName('')
@@ -42,7 +84,6 @@ function App() {
       })
     }, 1000)
 
-    // 保存 timer ID 以便停止
     window._recordingTimer = timer
   }
 
@@ -54,7 +95,7 @@ function App() {
     }
   }
 
-  const saveRecording = (type) => {
+  const saveRecording = async (type) => {
     if (!currentProject) return
     
     const updatedProject = {
@@ -62,18 +103,18 @@ function App() {
       [type]: { time: recordingTime, recordedAt: new Date().toLocaleString() }
     }
     
+    await db.put('projects', updatedProject)
     setCurrentProject(updatedProject)
     setProjects(projects.map(p => p.id === updatedProject.id ? updatedProject : p))
     
     if (type === 'referenceAudio') {
       setView('record-user')
     } else {
-      // 模拟比对分析
       analyzePerformance()
     }
   }
 
-  const analyzePerformance = () => {
+  const analyzePerformance = async () => {
     // 模拟分析结果
     const mockScore = {
       total: Math.floor(Math.random() * 30) + 70,
@@ -84,9 +125,36 @@ function App() {
       { time: '0:15', type: 'pitch', note: 'G4', expected: 'G4', actual: 'G#4' },
       { time: '0:32', type: 'rhythm', expected: '0.5s', actual: '0.7s' }
     ]
+    
     setScore(mockScore)
     setErrors(mockErrors)
+    
+    // 保存演奏记录
+    const performance = {
+      projectId: currentProject.id,
+      projectName: currentProject.name,
+      score: mockScore,
+      errors: mockErrors,
+      recordedAt: new Date().toLocaleString(),
+      duration: recordingTime
+    }
+    
+    await db.put('performances', performance)
+    await loadPerformances(currentProject.id)
+    
     setView('result')
+  }
+
+  // 计算错误统计
+  const getErrorStats = () => {
+    const stats = {}
+    performances.forEach(p => {
+      p.errors.forEach(e => {
+        const key = e.type === 'pitch' ? e.note : 'rhythm'
+        stats[key] = (stats[key] || 0) + 1
+      })
+    })
+    return Object.entries(stats).sort((a, b) => b[1] - a[1])
   }
 
   const formatTime = (seconds) => {
@@ -121,8 +189,8 @@ function App() {
             ) : (
               <ul className="project-list">
                 {projects.map(p => (
-                  <li key={p.id} onClick={() => { setCurrentProject(p); setView(p.referenceAudio ? 'record-user' : 'record-ref') }}>
-                    <span>{p.name}</span>
+                  <li key={p.id} onClick={async () => { setCurrentProject(p); await loadPerformances(p.id); setView(p.referenceAudio ? 'record-user' : 'record-ref') }}>
+                    <span className="project-name">{p.name}</span>
                     <span className="status">
                       {p.referenceAudio ? '✓' : '○'} 标准音 
                       {' | '}
@@ -205,6 +273,9 @@ function App() {
               )}
             </div>
             
+            <button className="back" onClick={async () => { await loadPerformances(currentProject.id); setView('history') }}>
+              📊 查看历史记录
+            </button>
             <button className="back" onClick={() => setView('projects')}>← 返回项目列表</button>
           </section>
         )}
@@ -252,10 +323,64 @@ function App() {
               <button onClick={() => { setCurrentProject({...currentProject, userAudio: null}); setView('record-user') }}>
                 重新录制
               </button>
-              <button className="secondary" onClick={() => setView('projects')}>
-                返回项目列表
+              <button className="secondary" onClick={() => setView('history')}>
+                查看历史
               </button>
             </div>
+          </section>
+        )}
+
+        {/* 历史记录 */}
+        {view === 'history' && currentProject && (
+          <section className="card">
+            <h2>历史记录: {currentProject.name}</h2>
+            
+            {/* 错误统计 */}
+            {performances.length > 0 && (
+              <div className="error-stats">
+                <h3>📈 错误统计</h3>
+                <div className="stats-grid">
+                  {getErrorStats().slice(0, 6).map(([key, count]) => (
+                    <div key={key} className="stat-item">
+                      <span className="stat-key">{key}</span>
+                      <span className="stat-count">{count}次</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {performances.length === 0 ? (
+              <p className="empty">暂无演奏记录</p>
+            ) : (
+              <ul className="history-list">
+                {performances.slice().reverse().map((p, i) => (
+                  <li key={i} className="history-item">
+                    <div className="history-header">
+                      <span className="history-date">{p.recordedAt}</span>
+                      <span className="history-score">{p.score.total}分</span>
+                    </div>
+                    <div className="history-details">
+                      <span>音高: {p.score.pitch}</span>
+                      <span>节奏: {p.score.rhythm}</span>
+                    </div>
+                    {p.errors.length > 0 && (
+                      <div className="history-errors">
+                        {p.errors.map((e, j) => (
+                          <span key={j} className="error-tag">
+                            {e.type === 'pitch' ? e.note : '节奏'} {e.type === 'pitch' ? e.actual : ''}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+            
+            <button className="back" onClick={() => setView('record-user')}>
+              ← 继续练习
+            </button>
           </section>
         )}
       </main>

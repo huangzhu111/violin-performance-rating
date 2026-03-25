@@ -253,3 +253,91 @@ button.back {
   font-size: 12px;
   margin-right: 8px;
 }
+
+/* 历史记录 */
+.error-stats {
+  background: #f8f9ff;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.error-stats h3 {
+  font-size: 14px;
+  color: #667eea;
+  margin-bottom: 12px;
+}
+
+.stats-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stat-item {
+  background: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stat-key {
+  font-size: 14px;
+  color: #333;
+}
+
+.stat-count {
+  font-size: 14px;
+  font-weight: bold;
+  color: #f5576c;
+}
+
+.history-list {
+  list-style: none;
+}
+
+.history-item {
+  padding: 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.history-date {
+  font-size: 12px;
+  color: #999;
+}
+
+.history-score {
+  font-size: 18px;
+  font-weight: bold;
+  color: #667eea;
+}
+
+.history-details {
+  display: flex;
+  gap: 16px;
+  font-size: 14px;
+  color: #666;
+}
+
+.history-errors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.error-tag {
+  background: #ffebee;
+  color: #f5576c;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
