@@ -392,13 +392,16 @@ button.back {
 }
 
 .delete-btn {
-  background: transparent;
+  background: #ffebee;
   color: #f5576c;
-  font-size: 20px;
-  padding: 8px 12px;
+  font-size: 16px;
+  padding: 8px 16px;
   width: auto;
+  border: 1px solid #ffcdd2;
+  border-radius: 8px;
+  margin-left: 8px;
 }
 
 .delete-btn:hover {
-  background: #fff5f5;
+  background: #ffcdd2;
 }
