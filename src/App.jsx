@@ -233,14 +233,14 @@ function App() {
         
         // 优先使用 SPICE 模型提取音高，失败则回退到 autocorrelation
         let userPitch, refPitch;
-        const getNote = spiceExtractor && spiceExtractor.isModelLoaded()
+        const getNote = false
           ? (f) => spiceExtractor.getNoteFromFrequency(f)
           : (f) => featureExtractor.getNoteFromFrequency(f);
         
         try {
-          if (spiceExtractor && spiceExtractor.isModelLoaded()) {
-            userPitch = await spiceExtractor.extractPitch(userAudioBuffer);
-            refPitch = await spiceExtractor.extractPitch(refAudioBuffer);
+          if (false) {
+            userPitch = await featureExtractor.extractPitch(userAudioBuffer);
+            refPitch = await featureExtractor.extractPitch(refAudioBuffer);
           } else {
             throw new Error('SPICE model not loaded');
           }
