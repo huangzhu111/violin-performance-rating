@@ -280,11 +280,11 @@ function App() {
               const absSemitones = Math.abs(semitones)
               
               // 如果偏差超过0.5个半音，记为错误
-              console.log("检测到音高偏差:", absSemitones); if (absSemitones > 10) {
+              console.log("检测到音高偏差:", absSemitones); if (absSemitones > 1.5) {
                 errors.push({
                   time: `${Math.floor(refTime / 60)}:${Math.floor(refTime % 60).toString().padStart(2, '0')}`,
                   type: 'pitch',
-                  severity: absSemitones > 2 ? 'high' : (absSemitones > 10 ? 'medium' : 'low'),
+                  severity: absSemitones > 2 ? 'high' : (absSemitones > 1.5 ? 'medium' : 'low'),
                   note: getNote(refFreq),
                   expected: getNote(refFreq),
                   actual: getNote(userFreq)
