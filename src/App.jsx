@@ -171,8 +171,14 @@ function App() {
         rhythm: Math.floor(Math.random() * 25) + 75
       }
       const mockErrors = [
-        { time: '0:15', type: 'pitch', note: 'G4', expected: 'G4', actual: 'G#4' },
-        { time: '0:32', type: 'rhythm', expected: '0.5s', actual: '0.7s' }
+        { time: '0:05', type: 'pitch', note: 'C4', expected: 'C4', actual: 'C#4' },
+        { time: '0:12', type: 'pitch', note: 'G4', expected: 'G4', actual: 'G#4' },
+        { time: '0:25', type: 'rhythm', expected: '0.5s', actual: '0.7s' },
+        { time: '0:32', type: 'pitch', note: 'A4', expected: 'A4', actual: 'Bb4' },
+        { time: '0:45', type: 'rhythm', expected: '0.5s', actual: '0.4s' },
+        { time: '0:58', type: 'pitch', note: 'G4', expected: 'G4', actual: 'F#4' },
+        { time: '1:10', type: 'pitch', note: 'E4', expected: 'E4', actual: 'F4' },
+        { time: '1:25', type: 'rhythm', expected: '1s', actual: '1.3s' }
       ]
       
       setScore(mockScore)
