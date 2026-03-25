@@ -44,6 +44,18 @@ function App() {
 
   const maxRecordingTime = 120
 
+  // 频率转音符名
+  const getNoteFromFrequency = (frequency) => {
+    if (!frequency || frequency <= 0) return null
+    const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    const a4 = 440
+    const semitones = 12 * Math.log2(frequency / a4)
+    const noteNum = Math.round(semitones) + 69
+    const note = notes[noteNum % 12]
+    const octave = Math.floor(noteNum / 12) - 1
+    return `${note}${octave}`
+  }
+
   // 播放音频片段（前后5秒）
   const playErrorSegment = (error) => {
     const blob = playMode === 'reference' ? referenceAudioBlob : currentAudioBlob
@@ -208,10 +220,30 @@ function App() {
         
         // 错误检测
         const errorDetector = new ErrorDetector()
-        const errors = errorDetector.detectErrors(aligned.refAligned, aligned.userAligned, {
-          pitchThreshold: 50, // cents
-          rhythmThreshold: 0.3 // seconds
-        })
+        const pitchErrors = errorDetector.detectPitchErrors(
+          aligned.alignedReference,
+          aligned.alignedUser,
+          refPitch,
+          userPitch,
+          0.5 // semitones threshold
+        )
+        
+        const rhythmErrors = errorDetector.detectRhythmErrors(
+          aligned.alignedReference,
+          aligned.alignedUser,
+          refPitch,
+          userPitch,
+          0.3 // seconds threshold
+        )
+        
+        // 合并错误
+        const errors = [...pitchErrors, ...rhythmErrors].map(e => ({
+          time: e.time ? `${Math.floor(e.time / 60)}:${Math.floor(e.time % 60).toString().padStart(2, '0')}` : '0:00',
+          type: e.type,
+          note: e.refFrequency ? getNoteFromFrequency(e.refFrequency) : null,
+          expected: e.type === 'pitch' ? (e.refFrequency ? getNoteFromFrequency(e.refFrequency) : '-') : `${e.refFrequency}s`,
+          actual: e.type === 'pitch' ? (e.userFrequency ? getNoteFromFrequency(e.userFrequency) : 'missing') : `${e.userFrequency}s`
+        }))
         
         // 评分
         const scorer = new Scorer()
