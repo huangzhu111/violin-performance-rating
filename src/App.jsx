@@ -110,7 +110,21 @@ function App() {
     if (type === 'referenceAudio') {
       setView('record-user')
     } else {
-      // 保存演奏记录（清空项目中的userAudio，每次都是新练习）
+      // 生成模拟分析结果
+      const mockScore = {
+        total: Math.floor(Math.random() * 30) + 70,
+        pitch: Math.floor(Math.random() * 20) + 80,
+        rhythm: Math.floor(Math.random() * 25) + 75
+      }
+      const mockErrors = [
+        { time: '0:15', type: 'pitch', note: 'G4', expected: 'G4', actual: 'G#4' },
+        { time: '0:32', type: 'rhythm', expected: '0.5s', actual: '0.7s' }
+      ]
+      
+      setScore(mockScore)
+      setErrors(mockErrors)
+      
+      // 保存演奏记录
       const performance = {
         projectId: currentProject.id,
         projectName: currentProject.name,
