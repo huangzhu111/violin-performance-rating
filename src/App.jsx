@@ -110,7 +110,20 @@ function App() {
     if (type === 'referenceAudio') {
       setView('record-user')
     } else {
-      analyzePerformance()
+      // 保存演奏记录（清空项目中的userAudio，每次都是新练习）
+      const performance = {
+        projectId: currentProject.id,
+        projectName: currentProject.name,
+        score: mockScore,
+        errors: mockErrors,
+        recordedAt: new Date().toLocaleString(),
+        duration: recordingTime
+      }
+      
+      await db.put('performances', performance)
+      await loadPerformances(currentProject.id)
+      
+      setView('result')
     }
   }
 
@@ -194,7 +207,7 @@ function App() {
                     <span className="status">
                       {p.referenceAudio ? '✓' : '○'} 标准音 
                       {' | '}
-                      {p.userAudio ? '✓' : '○'} 我的演奏
+                      {performances.length > 0 ? `✓ ${performances.length}次练习` : '○ 我的演奏'}
                     </span>
                   </li>
                 ))}
@@ -269,7 +282,12 @@ function App() {
               )}
               
               {currentProject.userAudio && (
-                <p className="saved">✓ 我的演奏已保存 ({currentProject.userAudio.time}秒)</p>
+                <>
+                  <p className="saved">✓ 我的演奏已保存 ({currentProject.userAudio.time}秒)</p>
+                  <button className="secondary" onClick={() => { setCurrentProject({...currentProject, userAudio: null}); setRecordingTime(0) }}>
+                    重新录制
+                  </button>
+                </>
               )}
             </div>
             
