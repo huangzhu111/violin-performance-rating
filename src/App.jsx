@@ -300,6 +300,7 @@ function App() {
         const pitchErrorsOnly = errors.filter(e => e.type === 'pitch')
         const rhythmErrorsOnly = errors.filter(e => e.type === 'rhythm')
         
+        const scorer = new Scorer()
         const finalScore = scorer.calculateScore(pitchErrorsOnly, rhythmErrorsOnly, {
           duration: recordingTime,
           totalNotes: errors.length
