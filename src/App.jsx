@@ -255,16 +255,24 @@ function App() {
           return
         }
         
-        // 错误检测 - 简化版，直接比对音高
+        // 错误检测 - 使用 DTW 对齐后比对
         const errors = []
         
         if (refPitch.length > 0 && userPitch.length > 0) {
-          // 简单的逐点比对
-          const minLen = Math.min(refPitch.length, userPitch.length)
+          // 使用 DTW 对齐两个音高序列
+          const dtw = new DTWAligner()
+          const aligned = dtw.dtw_align(refPitch, userPitch)
+          
+          // 对齐后的音高序列
+          const alignedRef = aligned.alignedReference || refPitch
+          const alignedUser = aligned.alignedUser || userPitch
+          
+          // 逐点比对对齐后的数据
+          const minLen = Math.min(alignedRef.length, alignedUser.length)
           for (let i = 0; i < minLen; i++) {
-            const refFreq = refPitch[i].frequency
-            const userFreq = userPitch[i].frequency
-            const refTime = refPitch[i].time
+            const refFreq = alignedRef[i].frequency
+            const userFreq = alignedUser[i].frequency
+            const refTime = alignedRef[i].time
             
             if (refFreq && userFreq) {
               // 计算半音偏差
