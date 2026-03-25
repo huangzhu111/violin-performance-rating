@@ -41,28 +41,28 @@ export class FeatureExtractor {
     
     // 找到峰值（忽略开始部分和低频部分）
     let maxCorrelation = 0
-    let maxLag = 0
-    
+    let bestLag = 0
+
     const minLag = Math.floor(this.sampleRate / 5000) // 最高频率约 5000Hz
-    const maxLag = Math.floor(this.sampleRate / 50)  // 最低频率约 50Hz
+    const maxLagLimit = Math.floor(this.sampleRate / 50)  // 最低频率约 50Hz
     
-    for (let lag = minLag; lag < maxLag; lag++) {
+    for (let lag = minLag; lag < maxLagLimit; lag++) {
       if (correlation[lag] > maxCorrelation) {
         maxCorrelation = correlation[lag]
-        maxLag = lag
+        bestLag = lag
       }
     }
     
     // 抛物线插值提高精度
-    if (maxLag > 0 && maxLag < n - 1) {
-      const y1 = correlation[maxLag - 1]
-      const y2 = correlation[maxLag]
-      const y3 = correlation[maxLag + 1]
-      const refinedLag = maxLag + (y1 - y3) / (2 * (y1 - 2 * y2 + y3))
+    if (bestLag > 0 && bestLag < n - 1) {
+      const y1 = correlation[bestLag - 1]
+      const y2 = correlation[bestLag]
+      const y3 = correlation[bestLag + 1]
+      const refinedLag = bestLag + (y1 - y3) / (2 * (y1 - 2 * y2 + y3))
       return this.sampleRate / refinedLag
     }
     
-    return maxLag > 0 ? this.sampleRate / maxLag : 0
+    return bestLag > 0 ? this.sampleRate / bestLag : 0
   }
 
   // 频率转音符名
