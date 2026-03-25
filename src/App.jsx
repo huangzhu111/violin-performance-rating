@@ -40,13 +40,17 @@ function App() {
   const [referenceAudioBlob, setReferenceAudioBlob] = useState(null)
   const [playingErrorIndex, setPlayingErrorIndex] = useState(null)
   const [playMode, setPlayMode] = useState('user') // 'user' 或 'reference'
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
 
   const maxRecordingTime = 120
 
   // 播放音频片段（前后5秒）
-  const playErrorSegment = (error, audioBlob) => {
-    const blob = playMode === 'reference' ? referenceAudioBlob : audioBlob
-    if (!blob) return
+  const playErrorSegment = (error) => {
+    const blob = playMode === 'reference' ? referenceAudioBlob : currentAudioBlob
+    if (!blob) {
+      alert(playMode === 'reference' ? '请先录制标准音！' : '请先录制您的演奏！')
+      return
+    }
     
     // 解析时间 (e.g., "0:15" -> 15)
     const timeParts = error.time.split(':')
@@ -179,6 +183,8 @@ function App() {
         return
       }
       
+      setIsAnalyzing(true)
+      
       try {
         const audioProcessor = new AudioProcessor()
         const featureExtractor = new FeatureExtractor()
@@ -231,6 +237,8 @@ function App() {
       } catch (err) {
         console.error('分析失败:', err)
         alert('分析失败，请重新录制！错误: ' + err.message)
+      } finally {
+        setIsAnalyzing(false)
       }
     }
   }
@@ -376,8 +384,10 @@ function App() {
               
               {!isRecording && recordingTime > 0 && !currentProject.userAudio && (
                 <div className="actions">
-                  <button onClick={() => saveRecording('userAudio')}>保存并分析</button>
-                  <button className="secondary" onClick={() => setRecordingTime(0)}>重试</button>
+                  <button onClick={() => saveRecording('userAudio')} disabled={isAnalyzing}>
+                    {isAnalyzing ? '分析中...' : '保存并分析'}
+                  </button>
+                  <button className="secondary" onClick={() => setRecordingTime(0)} disabled={isAnalyzing}>重试</button>
                 </div>
               )}
               
@@ -442,7 +452,7 @@ function App() {
                     <li key={i}>
                       <button 
                         className="play-error-btn"
-                        onClick={() => playErrorSegment(e, currentAudioBlob)}
+                        onClick={() => playErrorSegment(e)}
                         disabled={playingErrorIndex === e.time}
                       >
                         {playingErrorIndex === e.time ? '🔊 播放中...' : '▶'} {e.time}
